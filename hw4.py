@@ -59,7 +59,8 @@ class Window(QtWidgets.QMainWindow):
 		fileMenu.addAction(exitAction)
 
 		self.toolBar = self.addToolBar("ToolBar")
-		self.toolBar.addAction(equalizeHistAction)
+		self.toolBar.addAction(cornerDetectAction)
+		self.toolBar.addAction(segmentationAction)
 
 		# central widget for the opened image.
 		self.centralwidget = QtWidgets.QWidget(self)
