@@ -59,8 +59,7 @@ class Window(QtWidgets.QMainWindow):
 		fileMenu.addAction(exitAction)
 
 		self.toolBar = self.addToolBar("ToolBar")
-		self.toolBar.addAction(cornerDetectAction)
-		self.toolBar.addAction(segmentationAction)
+		self.toolBar.addAction(equalizeHistAction)
 
 		# central widget for the opened image.
 		self.centralwidget = QtWidgets.QWidget(self)
@@ -101,15 +100,10 @@ class Window(QtWidgets.QMainWindow):
 		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def corner_detection(self):
-		if self.inputImgNo != 1:
-			return
-		else:
-			self.gaussian_filtering(5)
+		return NotImplementedError
 
 	def segmentation(self):
 		return NotImplementedError
-
-	def 
 
 
 def main():
