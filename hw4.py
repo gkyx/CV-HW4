@@ -21,9 +21,9 @@ class Window(QtWidgets.QMainWindow):
 		self.Img = None
 		self.outputImg = None
 		self.gradientArray = None
+		self.cornerPoints = []
 		self.inputImgNo = 0
 		self.isInputOpen = False
-
 		mainMenu = self.menuBar()
 
 		fileMenu = mainMenu.addMenu('&File')
@@ -102,7 +102,7 @@ class Window(QtWidgets.QMainWindow):
 		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def corner_detection(self):
-		self.gaussian_filtering(7)
+		self.gaussian_filtering(11)
 		self.gradient_calculation()
 		self.corner_point_search()
 
@@ -110,7 +110,7 @@ class Window(QtWidgets.QMainWindow):
 		return NotImplementedError
 
 	def gaussian_filtering(self, size):
-		standardDeviation = 0.6
+		standardDeviation = 0.2 * size
 
 		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1]], dtype=np.uint8)
 
@@ -128,10 +128,10 @@ class Window(QtWidgets.QMainWindow):
 				self.outputImg[i,j] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size]),0),0) // np.sum(np.sum(kernel, 0), 0)
 
 		# show the outputted image
-		R, C = self.outputImg.shape
-		qImg = QtGui.QImage(self.outputImg.data, C, R, QtGui.QImage.Format_Grayscale8)
-		pix = QtGui.QPixmap(qImg)
-		self.label.setPixmap(pix)
+		#R, C = self.outputImg.shape
+		#qImg = QtGui.QImage(self.outputImg.data, C, R, QtGui.QImage.Format_Grayscale8)
+		#pix = QtGui.QPixmap(qImg)
+		#self.label.setPixmap(pix)
 
 	def gradient_calculation(self):
 		self.gradientArray = np.zeros([self.outputImg.shape[0], self.outputImg.shape[1], 2])
@@ -140,8 +140,8 @@ class Window(QtWidgets.QMainWindow):
 				if j == 0 or j == self.outputImg.shape[1] - 1 or i == 0 or i == self.outputImg.shape[0] - 1:
 					self.gradientArray[i,j,:] = 0
 				else:
-					self.gradientArray[i,j,0] = (float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2 # Ix
-					self.gradientArray[i,j,1] = (float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2 # Iy
+					self.gradientArray[i,j,0] = abs(float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2 # Ix
+					self.gradientArray[i,j,1] = abs(float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2 # Iy
 
 	def corner_point_search(self):
 		size = 9   # size of the Window
@@ -154,7 +154,21 @@ class Window(QtWidgets.QMainWindow):
 				gArray[0,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size, 0],expandedGradient[i:i+size, j:j+size, 1]),0),0)
 				gArray[1,0] = gArray[0,1]
 				#print(gArray)
+				if (np.linalg.eigvals(gArray).min() > 1000):
+					self.cornerPoints.append((j,i))
+		
+		backtorgb = cv2.cvtColor(self.Img, cv2.COLOR_GRAY2RGB)
 
+		for point in self.cornerPoints:
+			self.draw_point(backtorgb, point, (0,0,255))
+
+		R, C, B = backtorgb.shape
+		qImg = QtGui.QImage(backtorgb.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+
+	def draw_point(self, img, p, color ) :
+		cv2.circle( img, p, 2, color, cv2.FILLED, cv2.LINE_AA, 0 )
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
