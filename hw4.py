@@ -139,9 +139,8 @@ class Window(QtWidgets.QMainWindow):
 				if j == 0 or j == self.outputImg.shape[1] - 1 or i == 0 or i == self.outputImg.shape[0] - 1:
 					self.gradientArray[i,j,:] = 0
 				else:
-					self.gradientArray[i,j,0] = (self.outputImg[i, j + 1] - self.outputImg[i, j - 1]) / 2
-					self.gradientArray[i,j,1] = (self.outputImg[i + 1, j] - self.outputImg[i - 1, j]) / 2
-				
+					self.gradientArray[i,j,0] = (float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2
+					self.gradientArray[i,j,1] = (float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
