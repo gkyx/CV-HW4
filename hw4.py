@@ -47,10 +47,10 @@ class Window(QtWidgets.QMainWindow):
 		# taskbar actions
 
 		cornerDetectAction = QtWidgets.QAction("Run Corner Detection", self)
-		cornerDetectAction.triggered.connect(lambda: self.corner_detection)
+		cornerDetectAction.triggered.connect(self.corner_detection)
 
 		segmentationAction = QtWidgets.QAction("Run Segmentation", self)
-		segmentationAction.triggered.connect(lambda: self.segmentation)
+		segmentationAction.triggered.connect(self.segmentation)
 
 		fileMenu.addAction(openCornerAction)
 		fileMenu.addAction(openSegAction)
@@ -81,15 +81,15 @@ class Window(QtWidgets.QMainWindow):
 
 	def open_image(self, opNo):
 		if opNo == 1:
-			self.Img = cv2.imread("blocks.jpg")
+			self.Img = cv2.imread("blocks.jpg", 0)
 			self.inputImgNo = 1
 
 		elif opNo == 2:
 			self.Img = cv2.imread("mr.jpg")
 			self.inputImgNo = 2
 
-		R, C, B = self.Img.shape
-		qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		R, C = self.Img.shape
+		qImg = QtGui.QImage(self.Img.data, C, R, QtGui.QImage.Format_Grayscale8)
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
 		
@@ -101,11 +101,34 @@ class Window(QtWidgets.QMainWindow):
 		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def corner_detection(self):
-		return NotImplementedError
+		self.gaussian_filtering(13)
 
 	def segmentation(self):
 		return NotImplementedError
 
+	def gaussian_filtering(self, size):
+		standardDeviation = 1
+
+		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1]], dtype=np.uint8)
+
+		# prepare the gaussian kernel
+		kernel = np.zeros([size, size], dtype='int64')
+		for i in range(size):
+			for j in range(size):
+				kernel[i,j] = round((1 / (2 * pi * standardDeviation)) * exp(-((((i - (size // 2))*(i - (size // 2))) + ((j - (size // 2))*(j - (size // 2)))) / (2 * standardDeviation * standardDeviation))) * 100)
+
+		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2)], dtype=np.uint8)
+		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2))] = self.Img
+
+		for i in range(self.Img.shape[0]):
+			for j in range(self.Img.shape[1]):
+				self.outputImg[i,j] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size]),0),0) // np.sum(np.sum(kernel, 0), 0)
+
+		# show the outputted image
+		R, C = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, QtGui.QImage.Format_Grayscale8)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
