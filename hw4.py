@@ -20,6 +20,7 @@ class Window(QtWidgets.QMainWindow):
     
 		self.Img = None
 		self.outputImg = None
+		self.gradientArray = None
 		self.inputImgNo = 0
 		self.isInputOpen = False
 
@@ -101,13 +102,14 @@ class Window(QtWidgets.QMainWindow):
 		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def corner_detection(self):
-		self.gaussian_filtering(13)
+		self.gaussian_filtering(7)
+		self.gradient_calculation()
 
 	def segmentation(self):
 		return NotImplementedError
 
 	def gaussian_filtering(self, size):
-		standardDeviation = 1
+		standardDeviation = 0.6
 
 		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1]], dtype=np.uint8)
 
@@ -129,6 +131,17 @@ class Window(QtWidgets.QMainWindow):
 		qImg = QtGui.QImage(self.outputImg.data, C, R, QtGui.QImage.Format_Grayscale8)
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
+
+	def gradient_calculation(self):
+		self.gradientArray = np.zeros([self.outputImg.shape[0], self.outputImg.shape[1], 2])
+		for i in range(self.outputImg.shape[0]):
+			for j in range(self.outputImg.shape[1]):
+				if j == 0 or j == self.outputImg.shape[1] - 1 or i == 0 or i == self.outputImg.shape[0] - 1:
+					self.gradientArray[i,j,:] = 0
+				else:
+					self.gradientArray[i,j,0] = (self.outputImg[i, j + 1] - self.outputImg[i, j - 1]) / 2
+					self.gradientArray[i,j,1] = (self.outputImg[i + 1, j] - self.outputImg[i - 1, j]) / 2
+				
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
