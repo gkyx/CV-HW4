@@ -104,6 +104,7 @@ class Window(QtWidgets.QMainWindow):
 	def corner_detection(self):
 		self.gaussian_filtering(7)
 		self.gradient_calculation()
+		self.corner_point_search()
 
 	def segmentation(self):
 		return NotImplementedError
@@ -139,8 +140,21 @@ class Window(QtWidgets.QMainWindow):
 				if j == 0 or j == self.outputImg.shape[1] - 1 or i == 0 or i == self.outputImg.shape[0] - 1:
 					self.gradientArray[i,j,:] = 0
 				else:
-					self.gradientArray[i,j,0] = (float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2
-					self.gradientArray[i,j,1] = (float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2
+					self.gradientArray[i,j,0] = (float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2 # Ix
+					self.gradientArray[i,j,1] = (float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2 # Iy
+
+	def corner_point_search(self):
+		size = 9   # size of the Window
+		expandedGradient = np.zeros([self.outputImg.shape[0] + 2 * floor(size / 2), self.outputImg.shape[1] + 2 * floor(size / 2), 2], dtype=np.uint8)
+		expandedGradient[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)), :] = self.gradientArray
+		for i in range(self.outputImg.shape[0]):
+			for j in range(self.outputImg.shape[1]):
+				gArray = np.zeros([2,2])
+				gArray[0,0], gArray[1,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size],expandedGradient[i:i+size, j:j+size]),0),0) # Ix^2 and Iy^2 are calculated.
+				gArray[0,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size, 0],expandedGradient[i:i+size, j:j+size, 1]),0),0)
+				gArray[1,0] = gArray[0,1]
+				#print(gArray)
+
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
