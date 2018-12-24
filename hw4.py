@@ -1,5 +1,6 @@
 import cv2
 import sys
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from math import floor, pi, exp
@@ -8,7 +9,7 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 ############
 # Gokay Gas
 # 150150107
-# 18.10.2018
+# 24.12.2018
 ############
 
 class Window(QtWidgets.QMainWindow):
@@ -107,7 +108,63 @@ class Window(QtWidgets.QMainWindow):
 		self.corner_point_search()
 
 	def segmentation(self):
-		return NotImplementedError
+		if self.inputImgNo != 2:
+			return
+		
+		grayImage = cv2.cvtColor(self.Img, cv2.COLOR_BGR2GRAY)
+		ret,thresholdedImg = cv2.threshold(grayImage,56,255,cv2.THRESH_BINARY)
+
+		# opening operation
+		erosion(15,thresholdedImg)
+		dilation(15,thresholdedImg)
+
+		self.k_means(thresholdedImg, grayImage)
+
+		R, C = thresholdedImg.shape
+		qImg = QtGui.QImage(thresholdedImg.data, C, R, grayImage.strides[0], QtGui.QImage.Format_Grayscale8)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+
+	def k_means(self, maskedRegion, originalImage):
+		lastCenters = [0,0]
+		#centers = [random.randint(0,255), random.randint(0,255)]  # When they are random it does not always give the optimum one.
+		centers = [173, 248] # gives the result that we want
+		points = []
+		#clusters = [[],[]]
+		clusterTotals = [0,0]
+		clusterLengths = [0,0]
+
+		while lastCenters != centers:
+			print("Last Centers: ", lastCenters[0], " - ", lastCenters[1])
+			print("Centers: ", centers[0], " - ", centers[1])
+			clusterTotals = [0,0]
+			clusterLengths = [0,0]
+
+			for i in range(maskedRegion.shape[0]):
+				for j in range(maskedRegion.shape[1]):
+					if maskedRegion[i,j] == 255:
+						points.append([i,j])
+
+			for point in points:
+				if abs(originalImage[point[0],point[1]] - centers[0]) <= abs(originalImage[point[0],point[1]] - centers[1]):
+					#clusters[0].append(point)
+					clusterTotals[0] += originalImage[point[0],point[1]]
+					clusterLengths[0] += 1
+				else:
+					#clusters[1].append(point)
+					clusterTotals[1] += originalImage[point[0],point[1]]
+					clusterLengths[1] += 1
+
+			lastCenters[0] = centers[0]
+			lastCenters[1] = centers[1]
+			centers[0] = clusterTotals[0] // clusterLengths[0]
+			centers[1] = clusterTotals[1] // clusterLengths[1]
+		
+		for point in points:
+			if abs(originalImage[point[0],point[1]] - centers[0]) <= abs(originalImage[point[0],point[1]] - centers[1]):
+				maskedRegion[point[0],point[1]] = 127
+			else:
+				maskedRegion[point[0],point[1]] = 255
 
 	def gaussian_filtering(self, size):
 		standardDeviation = 0.01 * size
@@ -173,6 +230,38 @@ class Window(QtWidgets.QMainWindow):
 
 	def draw_point(self, img, p, color ) :
 		cv2.circle( img, p, 2, color, cv2.FILLED, cv2.LINE_AA, 0 )
+
+
+def dilation(size, img):
+	#structElement = np.zeros([size,size], dtype=np.uint8)
+	#structElement[:,:] = 1
+
+	expandedImage = np.zeros([img.shape[0] + 2 * floor(size / 2), img.shape[1] + 2 * floor(size / 2)], dtype="int64")
+	expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2))] = img
+
+	for i in range(img.shape[0]):
+			for j in range(img.shape[1]):
+				# since the struct element only consists of 1s we do not need to use it we can just check all the values in the window(frame)
+				if np.sum(np.sum(expandedImage[i:i+size, j:j+size] == 255,0),0) > 0:
+					img[i,j] = 255
+				else:
+					img[i,j] = 0
+
+def erosion(size, img):
+	#structElement = np.zeros([size,size], dtype=np.uint8)
+	#structElement[:,:] = 1
+
+	expandedImage = np.zeros([img.shape[0] + 2 * floor(size / 2), img.shape[1] + 2 * floor(size / 2)], dtype="int64")
+	expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2))] = img
+
+	for i in range(img.shape[0]):
+			for j in range(img.shape[1]):
+				# since the struct element only consists of 1s we do not need to use it we can just check all the values in the window(frame)
+				if np.sum(np.sum(expandedImage[i:i+size, j:j+size] == 255,0),0) == size**2:
+					img[i,j] = 255
+				else:
+					img[i,j] = 0
+
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
