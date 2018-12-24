@@ -26,6 +26,9 @@ class Window(QtWidgets.QMainWindow):
 		self.isInputOpen = False
 		mainMenu = self.menuBar()
 
+		self.dx = None
+		self.dy = None
+
 		fileMenu = mainMenu.addMenu('&File')
 
 		# file menu actions
@@ -102,7 +105,7 @@ class Window(QtWidgets.QMainWindow):
 		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def corner_detection(self):
-		self.gaussian_filtering(11)
+		self.gaussian_filtering(9)
 		self.gradient_calculation()
 		self.corner_point_search()
 
@@ -110,7 +113,7 @@ class Window(QtWidgets.QMainWindow):
 		return NotImplementedError
 
 	def gaussian_filtering(self, size):
-		standardDeviation = 0.2 * size
+		standardDeviation = 0.01 * size
 
 		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1]], dtype=np.uint8)
 
@@ -135,32 +138,36 @@ class Window(QtWidgets.QMainWindow):
 
 	def gradient_calculation(self):
 		self.gradientArray = np.zeros([self.outputImg.shape[0], self.outputImg.shape[1], 2])
+		
+		
 		for i in range(self.outputImg.shape[0]):
 			for j in range(self.outputImg.shape[1]):
 				if j == 0 or j == self.outputImg.shape[1] - 1 or i == 0 or i == self.outputImg.shape[0] - 1:
 					self.gradientArray[i,j,:] = 0
 				else:
-					self.gradientArray[i,j,0] = abs(float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2 # Ix
-					self.gradientArray[i,j,1] = abs(float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2 # Iy
+					self.gradientArray[i,j,0] = (float(self.outputImg[i, j + 1]) - float(self.outputImg[i, j - 1])) / 2 # Ix
+					self.gradientArray[i,j,1] = (float(self.outputImg[i + 1, j]) - float(self.outputImg[i - 1, j])) / 2 # Iy
 
 	def corner_point_search(self):
-		size = 9   # size of the Window
-		expandedGradient = np.zeros([self.outputImg.shape[0] + 2 * floor(size / 2), self.outputImg.shape[1] + 2 * floor(size / 2), 2], dtype=np.uint8)
+		size = 3   # size of the Window
+		expandedGradient = np.zeros([self.outputImg.shape[0] + 2 * floor(size / 2), self.outputImg.shape[1] + 2 * floor(size / 2), 2], dtype="int64")
 		expandedGradient[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)), :] = self.gradientArray
+
 		for i in range(self.outputImg.shape[0]):
 			for j in range(self.outputImg.shape[1]):
 				gArray = np.zeros([2,2])
 				gArray[0,0], gArray[1,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size],expandedGradient[i:i+size, j:j+size]),0),0) # Ix^2 and Iy^2 are calculated.
-				gArray[0,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size, 0],expandedGradient[i:i+size, j:j+size, 1]),0),0)
+				gArray[0,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size, 0], expandedGradient[i:i+size, j:j+size, 1]),0),0)
 				gArray[1,0] = gArray[0,1]
-				#print(gArray)
-				if (np.linalg.eigvals(gArray).min() > 1000):
+				if(i == 226 and j == 73):
+					print(gArray)
+				if (np.linalg.eigvals(gArray).min() > 600):
 					self.cornerPoints.append((j,i))
 		
 		backtorgb = cv2.cvtColor(self.Img, cv2.COLOR_GRAY2RGB)
 
 		for point in self.cornerPoints:
-			self.draw_point(backtorgb, point, (0,0,255))
+			self.draw_point(backtorgb, point, (255,0,0))
 
 		R, C, B = backtorgb.shape
 		qImg = QtGui.QImage(backtorgb.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
