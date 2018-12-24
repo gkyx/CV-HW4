@@ -85,15 +85,20 @@ class Window(QtWidgets.QMainWindow):
 		if opNo == 1:
 			self.Img = cv2.imread("blocks.jpg", 0)
 			self.inputImgNo = 1
+			
+			R, C = self.Img.shape
+			qImg = QtGui.QImage(self.Img.data, C, R, QtGui.QImage.Format_Grayscale8)
+			pix = QtGui.QPixmap(qImg)
+			self.label.setPixmap(pix)
 
 		elif opNo == 2:
 			self.Img = cv2.imread("mr.jpg")
 			self.inputImgNo = 2
-
-		R, C = self.Img.shape
-		qImg = QtGui.QImage(self.Img.data, C, R, QtGui.QImage.Format_Grayscale8)
-		pix = QtGui.QPixmap(qImg)
-		self.label.setPixmap(pix)
+			
+			R, C, B = self.Img.shape
+			qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+			pix = QtGui.QPixmap(qImg)
+			self.label.setPixmap(pix)
 		
 
 	def reset(self):
@@ -213,8 +218,7 @@ class Window(QtWidgets.QMainWindow):
 				gArray[0,0], gArray[1,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size],expandedGradient[i:i+size, j:j+size]),0),0) # Ix^2 and Iy^2 are calculated.
 				gArray[0,1] = np.sum(np.sum(np.multiply(expandedGradient[i:i+size, j:j+size, 0], expandedGradient[i:i+size, j:j+size, 1]),0),0)
 				gArray[1,0] = gArray[0,1]
-				if(i == 226 and j == 73):
-					print(gArray)
+				
 				if (np.linalg.eigvals(gArray).min() > 600):
 					self.cornerPoints.append((j,i))
 		
