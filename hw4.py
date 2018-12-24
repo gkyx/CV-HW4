@@ -47,10 +47,10 @@ class Window(QtWidgets.QMainWindow):
 		# taskbar actions
 
 		cornerDetectAction = QtWidgets.QAction("Run Corner Detection", self)
-		cornerDetectAction.triggered.connect(lambda: self.corner_detection)
+		cornerDetectAction.triggered.connect(self.corner_detection)
 
 		segmentationAction = QtWidgets.QAction("Run Segmentation", self)
-		segmentationAction.triggered.connect(lambda: self.segmentation)
+		segmentationAction.triggered.connect(self.segmentation)
 
 		fileMenu.addAction(openCornerAction)
 		fileMenu.addAction(openSegAction)
@@ -104,7 +104,16 @@ class Window(QtWidgets.QMainWindow):
 		return NotImplementedError
 
 	def segmentation(self):
-		return NotImplementedError
+		if self.inputImgNo != 2:
+			return
+		
+		grayImage = cv2.cvtColor(self.Img, cv2.COLOR_BGR2GRAY)
+		ret,thresholdedImg = cv2.threshold(grayImage,56,255,cv2.THRESH_BINARY)
+
+		R, C = thresholdedImg.shape
+		qImg = QtGui.QImage(thresholdedImg.data, C, R, grayImage.strides[0], QtGui.QImage.Format_Grayscale8)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 
 def main():
