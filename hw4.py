@@ -164,7 +164,7 @@ class Window(QtWidgets.QMainWindow):
 		backtorgb = cv2.cvtColor(self.Img, cv2.COLOR_GRAY2RGB)
 
 		for point in self.cornerPoints:
-			self.draw_point(backtorgb, point, (255,0,0))
+			self.draw_point(backtorgb, point, (0,255,0))
 
 		R, C, B = backtorgb.shape
 		qImg = QtGui.QImage(backtorgb.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
