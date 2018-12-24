@@ -110,11 +110,30 @@ class Window(QtWidgets.QMainWindow):
 		grayImage = cv2.cvtColor(self.Img, cv2.COLOR_BGR2GRAY)
 		ret,thresholdedImg = cv2.threshold(grayImage,56,255,cv2.THRESH_BINARY)
 
+		erosion(15,thresholdedImg)
+
 		R, C = thresholdedImg.shape
 		qImg = QtGui.QImage(thresholdedImg.data, C, R, grayImage.strides[0], QtGui.QImage.Format_Grayscale8)
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
 
+
+#def dilation(size):
+
+def erosion(size, img):
+	#structElement = np.zeros([size,size], dtype=np.uint8)
+	#structElement[:,:] = 1
+
+	expandedImage = np.zeros([img.shape[0] + 2 * floor(size / 2), img.shape[1] + 2 * floor(size / 2)], dtype="int64")
+	expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2))] = img
+
+	for i in range(img.shape[0]):
+			for j in range(img.shape[1]):
+				# since the struct element only consists of 1s we do not need to use it we can just check all the values in the window(frame)
+				if np.sum(np.sum(expandedImage[i:i+size, j:j+size] == 255,0),0) == size**2:
+					img[i,j] = 255
+				else:
+					img[i,j] = 0
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
