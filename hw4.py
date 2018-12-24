@@ -26,9 +26,6 @@ class Window(QtWidgets.QMainWindow):
 		self.isInputOpen = False
 		mainMenu = self.menuBar()
 
-		self.dx = None
-		self.dy = None
-
 		fileMenu = mainMenu.addMenu('&File')
 
 		# file menu actions
