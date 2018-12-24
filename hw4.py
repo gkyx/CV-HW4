@@ -1,5 +1,6 @@
 import cv2
 import sys
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from math import floor, pi, exp
@@ -8,7 +9,7 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 ############
 # Gokay Gas
 # 150150107
-# 18.10.2018
+# 24.12.2018
 ############
 
 class Window(QtWidgets.QMainWindow):
@@ -110,13 +111,58 @@ class Window(QtWidgets.QMainWindow):
 		grayImage = cv2.cvtColor(self.Img, cv2.COLOR_BGR2GRAY)
 		ret,thresholdedImg = cv2.threshold(grayImage,56,255,cv2.THRESH_BINARY)
 
+		# opening operation
 		erosion(15,thresholdedImg)
 		dilation(15,thresholdedImg)
+
+		self.k_means(thresholdedImg, grayImage)
 
 		R, C = thresholdedImg.shape
 		qImg = QtGui.QImage(thresholdedImg.data, C, R, grayImage.strides[0], QtGui.QImage.Format_Grayscale8)
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
+
+	def k_means(self, maskedRegion, originalImage):
+		lastCenters = [0,0]
+		#centers = [random.randint(0,255), random.randint(0,255)]  # When they are random it does not always give the optimum one.
+		centers = [173, 248] # gives the result that we want
+		points = []
+		#clusters = [[],[]]
+		clusterTotals = [0,0]
+		clusterLengths = [0,0]
+
+		while lastCenters != centers:
+			print("Last Centers: ", lastCenters[0], " - ", lastCenters[1])
+			print("Centers: ", centers[0], " - ", centers[1])
+			clusterTotals = [0,0]
+			clusterLengths = [0,0]
+
+			for i in range(maskedRegion.shape[0]):
+				for j in range(maskedRegion.shape[1]):
+					if maskedRegion[i,j] == 255:
+						points.append([i,j])
+
+			for point in points:
+				if abs(originalImage[point[0],point[1]] - centers[0]) <= abs(originalImage[point[0],point[1]] - centers[1]):
+					#clusters[0].append(point)
+					clusterTotals[0] += originalImage[point[0],point[1]]
+					clusterLengths[0] += 1
+				else:
+					#clusters[1].append(point)
+					clusterTotals[1] += originalImage[point[0],point[1]]
+					clusterLengths[1] += 1
+
+			lastCenters[0] = centers[0]
+			lastCenters[1] = centers[1]
+			centers[0] = clusterTotals[0] // clusterLengths[0]
+			centers[1] = clusterTotals[1] // clusterLengths[1]
+		
+		for point in points:
+			if abs(originalImage[point[0],point[1]] - centers[0]) <= abs(originalImage[point[0],point[1]] - centers[1]):
+				maskedRegion[point[0],point[1]] = 127
+			else:
+				maskedRegion[point[0],point[1]] = 255
+
 
 
 def dilation(size, img):
